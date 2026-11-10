@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Speech to Text</title>
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+  <main class="console">
+    <header class="console__header">
+      <span class="led" id="led" aria-hidden="true"></span>
+      <h1>Speech to Text</h1>
+    </header>
+ 
+    <button id="recordButton" class="transport" type="button" data-state="idle" aria-pressed="false">
+      <span class="transport__icon" aria-hidden="true"></span>
+      <span class="transport__label">Start recording</span>
+    </button>
+ 
+    <p class="console__timer" id="timer" aria-hidden="true">00:00</p>
+ 
+    <p class="console__state" id="statusText" role="status" aria-live="polite">Ready to record</p>
+ 
+    <section class="readout" aria-labelledby="readoutLabel">
+      <h2 id="readoutLabel" class="readout__label">Transcript</h2>
+      <p class="readout__text" id="transcript">Your transcript will appear here.</p>
+    </section>
+  </main>
+ 
+  <script src="/app.js"></script>
+</body>
+</html>
