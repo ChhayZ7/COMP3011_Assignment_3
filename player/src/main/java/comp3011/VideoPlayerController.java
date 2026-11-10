@@ -31,13 +31,16 @@ public class VideoPlayerController {
     private final VideoPlayerModel model;
     private final VideoPlayerView view;
     private final BiConsumer<Integer, Integer> videoSizeChangedHandler;
+    private final SubtitleManager subtitles;
 
     public VideoPlayerController(
             boolean audioEnabled,
             BiConsumer<Integer, Integer> videoSizeChangedHandler,
-            List<FrameProcessor> frameProcessors) {
+            List<FrameProcessor> frameProcessors,
+            SubtitleManager subtitles) {
         this.view = new VideoPlayerView();
         this.videoSizeChangedHandler = videoSizeChangedHandler;
+        this.subtitles = subtitles;
         model = new VideoPlayerModel(
                 audioEnabled,
                 this::onVideoSizeChanged,
@@ -45,6 +48,7 @@ public class VideoPlayerController {
                 this::onStatusChanged,
                 this::onPlaybackStateChanged,
                 this::onAudioOutputStateChanged,
+                subtitles::updatePlaybackPosition,
                 frameProcessors);
 
         view.getStartOverButton().setOnAction(_ -> startOver());
@@ -53,7 +57,9 @@ public class VideoPlayerController {
         view.getForwardFiveButton().setOnAction(_ -> forwardFiveSeconds());
         view.getStopButton().setOnAction(_ -> stopAndExit());
         view.getAudioButton().setOnAction(_ -> toggleAudioOutput());
+        view.getSubtitlesButton().setOnAction(_ -> toggleSubtitles());
         view.showAudioEnabled(model.isAudioOutputEnabled());
+        view.showSubtitlesEnabled(subtitles.isEnabled());
     }
 
     public void installKeyboardShortcuts(Scene scene) {
@@ -76,6 +82,9 @@ public class VideoPlayerController {
             } else if (event.getCode() == KeyCode.A) {
                 toggleAudioOutput();
                 event.consume();
+            } else if (event.getCode() == KeyCode.S) {
+            		toggleSubtitles();
+            		event.consume();
             }
         });
     }
@@ -86,11 +95,13 @@ public class VideoPlayerController {
 
     public void play(File file) {
         view.setPlaybackControlsDisabled(false);
+        subtitles.open(file);
         model.play(file);
     }
 
     public void shutdown() {
         model.shutdown();
+        subtitles.close();
     }
 
     private void startOver() {
@@ -111,6 +122,11 @@ public class VideoPlayerController {
 
     private void toggleAudioOutput() {
         model.toggleAudioOutput();
+    }
+    
+    // Only flips a switch that the subtitle effect reads, so playback carries on untouched.
+    private void toggleSubtitles() {
+    		view.showSubtitlesEnabled(subtitles.toggle());
     }
 
     private void stopAndExit() {

@@ -41,6 +41,8 @@ public enum FrameProcessorOption {
 	BLEED_FRAMES('b', "bleed-frames", "Bleed light into frames", FrameBleeder::new),
 	PEPPER_FRAMES('p', "pepper-frames", "Pepper frames with dark spots/blotches",
 			FramePepperer::new);
+	SUBTITLE_FRAMES('S', "subtitle-frames", "Add speech-to-text subtitles to frames", 
+			FrameSubtitler::new)
 	
 	// Width the "--long-name" column is padded to so descriptions line up in the help text.
 	private static final int LONG_NAME_COLUMN_WIDTH = 17;
