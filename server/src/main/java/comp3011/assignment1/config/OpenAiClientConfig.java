@@ -27,17 +27,30 @@ public class OpenAiClientConfig {
 
     @Bean
     public RestClient openAiRestClient(RestClient.Builder builder, OpenAiProperties properties) {
-        Duration timeout = Duration.ofSeconds(properties.timeoutSeconds());
-
-        HttpClient httpClient = HttpClient.newBuilder()
-                .connectTimeout(timeout)
-                .build();
-        JdkClientHttpRequestFactory requestFactory = new JdkClientHttpRequestFactory(httpClient);
-        requestFactory.setReadTimeout(timeout);
-
-        return builder
-                .baseUrl(properties.baseUrl())
-                .requestFactory(requestFactory)
-                .build();
+    		return build(builder, properties.baseUrl(), Duration.ofSeconds(properties.timeoutSeconds()));
+    }
+    
+    /**
+     * A second client for the subtitle endpoint's Whisper calls. Same provider, longer timeout:
+     * a verbose transcription with word timestamps takes noticeably longer than a plain one.
+     */
+    @Bean
+    public RestClient whisperRestClient(
+    		RestClient.Builder builder, OpenAiProperties properties, WhisperProperties whisper) {
+    		return build(builder, properties.baseUrl(), Duration.ofSeconds(whisper.timeoutSeconds()));
+    }
+    
+    private RestClient build(RestClient.Builder builder, String baseUrl, Duration timeout) {
+    		HttpClient httpClient = HttpClient.newBuilder()
+    				.connectTimeout(timeout)
+    				.build();
+    		JdkClientHttpRequestFactory requestFactory = new JdkClientHttpRequestFactory(httpClient);
+    		requestFactory.setReadTimeout(timeout);
+    		
+    		return builder
+    				.clone()
+    				.baseUrl(baseUrl)
+    				.requestFactory(requestFactory)
+    				.build();
     }
 }
