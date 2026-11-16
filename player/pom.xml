@@ -34,6 +34,12 @@
       <artifactId>javacv-platform</artifactId>
       <version>${javacv.version}</version>
     </dependency>
+    <!-- Reads the subtitle server's JSON responses (Assignment 3). -->
+    <dependency>
+      <groupId>com.fasterxml.jackson.core</groupId>
+      <artifactId>jackson-databind</artifactId>
+      <version>2.19.2</version>
+    </dependency>
     <dependency>
     	  <groupId>org.junit.jupiter</groupId>
     	  <artifactId>junit-jupiter</artifactId>
