@@ -16,6 +16,7 @@ import java.util.Queue;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.LongConsumer;
 
 import org.bytedeco.javacv.FFmpegFrameGrabber;
 import org.bytedeco.javacv.Frame;
@@ -48,6 +49,7 @@ public class VideoPlayerModel {
     private final Consumer<String> statusChangedHandler;
     private final BiConsumer<Boolean, Boolean> playbackStateChangedHandler;
     private final Consumer<Boolean> audioOutputStateChangedHandler;
+    private final LongConsumer playbackPositionHandler;
 
     // This is the critical wiring that allows the framework (JavaFX) to call
     // into our model logic every time it goes around its event loop. Every GUI
@@ -95,6 +97,7 @@ public class VideoPlayerModel {
             Consumer<String> statusChangedHandler,
             BiConsumer<Boolean, Boolean> playbackStateChangedHandler,
             Consumer<Boolean> audioOutputStateChangedHandler,
+            LongConsumer playbackPositionHandler,
             List<FrameProcessor> frameProcessors) {
         audioOutputEnabled = audioEnabled;
         this.videoSizeChangedHandler = videoSizeChangedHandler;
@@ -102,6 +105,7 @@ public class VideoPlayerModel {
         this.statusChangedHandler = statusChangedHandler;
         this.playbackStateChangedHandler = playbackStateChangedHandler;
         this.audioOutputStateChangedHandler = audioOutputStateChangedHandler;
+        this.playbackPositionHandler = playbackPositionHandler;
         this.frameProcessors = List.copyOf(frameProcessors);
     }
 
@@ -308,6 +312,7 @@ public class VideoPlayerModel {
         playbackStartNs = 0;
         pauseStartedNs = pauseRequested ? System.nanoTime() : 0;
         frameShownSinceClockReset = false;
+        playbackPositionHandler.accept(logicalTimestampUs); // A seek: subtitles for here are needed first.
     }
 
     // The clock starts when the first frame after a reset reaches the display, rather than when it was decoded, so
@@ -377,6 +382,7 @@ public class VideoPlayerModel {
         currentTimestampUs = logicalPlaybackBaseUs + relativeTimestampUs;
         relativeSeekBaseUs = NO_SEEK_REQUEST;
         frameShownSinceClockReset = true;
+        playbackPositionHandler.accept(currentTimestampUs);
 
         // Dump some logging to the console once per second so that real time performance can be monitored.
         if (intFrameRate > 0 && frame.frameNumber() % intFrameRate == 0) {
