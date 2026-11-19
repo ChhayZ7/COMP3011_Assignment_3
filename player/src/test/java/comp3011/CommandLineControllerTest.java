@@ -16,6 +16,7 @@ import static comp3011.FrameProcessorOption.JITTER_FRAMES;
 import static comp3011.FrameProcessorOption.MOTTLE_FRAMES;
 import static comp3011.FrameProcessorOption.NUMBER_FRAMES;
 import static comp3011.FrameProcessorOption.PEPPER_FRAMES;
+import static comp3011.FrameProcessorOption.SUBTITLE_FRAMES;
 import static comp3011.FrameProcessorOption.SCRATCH_FRAMES;
 import static comp3011.FrameProcessorOption.VIGNETTE_FRAMES;
 import static comp3011.FrameProcessorOption.YELLOW_FRAMES;
@@ -187,6 +188,7 @@ class CommandLineControllerTest {
                 "  -m, --mottle-frames    Add cloudy emulsion mottling",
                 "  -b, --bleed-frames     Bleed light into frames",
                 "  -p, --pepper-frames    Pepper frames with dark spots/blotches",
+                "  -S, --subtitle-frames  Add speech-to-text subtitles to frames",
                 "",
                 "Frame processors are applied in command-line order and may be repeated.",
                 "Example: -nssnfwyvdjmbp numbers, scratches twice, numbers again, flickers,",
@@ -203,7 +205,20 @@ class CommandLineControllerTest {
         }
         assertEquals(expected, captured.toString());
     }
+    
+    @Test
+    void subtitleOptionIsCaseSensitiveAndSwitchesSubtitlesOn() {
+        CommandLineController upper = parse("-S", videoPath);
+        assertEquals(List.of(SUBTITLE_FRAMES), upper.getFrameProcessorOptions());
+        assertTrue(upper.isSubtitlesRequested());
 
+        CommandLineController lower = parse("-s", videoPath);
+        assertEquals(List.of(SCRATCH_FRAMES), lower.getFrameProcessorOptions());
+        assertFalse(lower.isSubtitlesRequested());
+
+        assertTrue(parse("--subtitle-frames", videoPath).isSubtitlesRequested());
+    }
+    
     @Test
     void repeatedOptionCreatesIndependentProcessors() {
         assertNotSame(SCRATCH_FRAMES.createProcessor(), SCRATCH_FRAMES.createProcessor());
