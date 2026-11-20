@@ -118,7 +118,7 @@ mvn javafx:run "-Djavafx.args=-a -S movie.mp4"
                                                                                                        |         ▼
                                                                                                        |  SubtitleBuilder
                                                                                                        ▼        |
-                                                                                          cache ◀─────cues ◀────────┘   
+                                                                                          cache ◀─────cues ◀───┘   
                                                         UsageService
                                               GET /api/v1/global/usage → {"usage": s}
 ```
