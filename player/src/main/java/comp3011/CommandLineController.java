@@ -82,6 +82,11 @@ public class CommandLineController {
     		return Collections.unmodifiableList(frameProcessorOptions);
     }
 
+    /** True if {@code -S, --subtitle-frames} was given, so subtitles start switched on. */
+    public boolean isSubtitlesRequested() {
+    		return frameProcessorOptions.contains(FrameProcessorOption.SUBTITLE_FRAMES);
+    }
+
     public boolean shouldLaunchApplication() {
         return errorMessage == null && videoFile != null;
     }

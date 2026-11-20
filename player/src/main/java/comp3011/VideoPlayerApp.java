@@ -43,10 +43,10 @@ public class VideoPlayerApp extends Application {
     @Override
     public void start(Stage stage) {
         this.stage = stage;
-        
+
         SubtitleManager subtitles = new SubtitleManager(
-        		commandLineController.isSubtitlesRequested(),
-        		SubtitleClient.DEFAULT_SERVER);
+                commandLineController.isSubtitlesRequested(),
+                SubtitleClient.DEFAULT_SERVER);
         controller = new VideoPlayerController(
                 commandLineController.isAudioRequested(),
                 this::setVideoSize,
@@ -69,17 +69,13 @@ public class VideoPlayerApp extends Application {
         playVideo();
     }
     
-	/*
-	 * Creates the effects in command-line order and connects every subtitle effect
-	 * to the player's subtitles. The subtitle button must work even without -S, so
-	 * in that case one subtitle effect is added at the end, after all the other
-	 * effects so its text is drawn on top of them. It does nothing until subtitles
-	 * are switched on.
-	 */
-    private List<FrameProcessor> createFrameProcessors(){
-    		return commandLineController.getFrameProcessorOptions().stream()
+    // Creates the effects in command-line order and connects every subtitle effect to the player's subtitles. The
+    // subtitle button must work even without -S, so in that case one subtitle effect is added at the end, after all
+    // the other effects so its text is drawn on top of them. It does nothing until subtitles are switched on.
+    private List<FrameProcessor> createFrameProcessors(SubtitleManager subtitles){
+    		List<FrameProcessor> processors = new ArrayList<>(commandLineController.getFrameProcessorOptions().stream()
     				.map(FrameProcessorOption::createProcessor)
-    				.toList();
+    				.toList());
     		if (!commandLineController.isSubtitlesRequested()) {
     			processors.add(new FrameSubtitler());
     		}
@@ -167,8 +163,8 @@ public class VideoPlayerApp extends Application {
 
     // Entry point.
     public static void main(String[] args) {
-    		// Subtitles are drawn with Java2D, which must not start AWT's own windowing system alongside JavaFX.
-    		System.setProperty("java.awt.headless", "true");
+        // Subtitles are drawn with Java2D, which must not start AWT's own windowing system alongside JavaFX.
+        System.setProperty("java.awt.headless", "true");
         commandLineController = new CommandLineController(args);
 
         if (!commandLineController.shouldLaunchApplication()) {

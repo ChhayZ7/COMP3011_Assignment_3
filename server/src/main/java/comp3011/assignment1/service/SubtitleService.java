@@ -27,7 +27,7 @@ public class SubtitleService {
 	private final SubtitleCache cache;
 	private final UsageService usageService;
 	
-	public SubtitleService(TimedTranscriptService transcriptionService, SubtitleBuilder subtitleBuilder,
+	public SubtitleService(TimedTranscriptionService transcriptionService, SubtitleBuilder subtitleBuilder,
 			SubtitleCache cache, UsageService usageService) {
 		this.transcriptionService = transcriptionService;
 		this.subtitleBuilder = subtitleBuilder;
