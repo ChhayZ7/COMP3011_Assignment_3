@@ -1,6 +1,6 @@
 package comp3011.assignment1.config;
 
-import org.springframeworl.boot.context.properties.ConfigurationProperties;
+import org.springframework.boot.context.properties.ConfigurationProperties;
 
 /**
  * Binds the {@code stt.whisper.*} properties used by the subtitle endpoint (Assignment 3).
@@ -15,6 +15,6 @@ import org.springframeworl.boot.context.properties.ConfigurationProperties;
  * @param apiKeyFile     optional path to a file holding the API key (e.g. {@code key.txt} on the
  *                       viva USB stick). Used only when {@code OPENAI_API_KEY} is not set.
  */
-@COnfigurationProperties(prefix = "stt.whisper")
+@ConfigurationProperties(prefix = "stt.whisper")
 public record WhisperProperties(String model, int timeoutSeconds, String apiKeyFile) {
 }
