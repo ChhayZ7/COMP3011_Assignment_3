@@ -1,6 +1,6 @@
 package comp3011.assignment1.service;
 
-import java.uitl.List;
+import java.util.List;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -33,7 +33,7 @@ import comp3011.assignment1.model.TimedTranscript;
  */
 @Service
 @Profile("!stub")
-public class OpenAiWhisperService {
+public class OpenAiWhisperService implements TimedTranscriptionService {
 	private static final Logger log = LoggerFactory.getLogger(OpenAiWhisperService.class);
 	private static final String TRANSCRIPTIONS_PATH = "/v1/audio/transcriptions";
 	
@@ -58,7 +58,7 @@ public class OpenAiWhisperService {
 		}
 
 	try {
-		VerboseReponse response = restClient.post()
+		VerboseResponse response = restClient.post()
 				.uri(TRANSCRIPTIONS_PATH)
 				.header(HttpHeaders.AUTHORIZATION, "Bearer " + apiKey)
 				.contentType(MediaType.MULTIPART_FORM_DATA)
@@ -73,7 +73,7 @@ public class OpenAiWhisperService {
 	} catch (RestClientResponseException ex) {
 		// As in OpenAiTranscriptionService, the upstream body is never passed on.
 		log.error("Whisper request failed with HTTP status {}", ex.getStatusCode().value());
-		throw new TranscriptionException("The speech-to-text service rejected the request.", ex)''
+		throw new TranscriptionException("The speech-to-text service rejected the request.", ex);
 	} catch (RestClientException ex) {
 		log.error("Failed to reach the Whisper endpoint: {}", ex.getClass().getSimpleName());
 		throw new TranscriptionException("Failed to reach the speech-to-text service", ex);	
@@ -101,12 +101,12 @@ public class OpenAiWhisperService {
 	}
 	
 	private static TimedTranscript toTranscript(VerboseResponse response) {
-		List<TimedTranscript.Segment> segments = response.segment() == null ? java.util.List.of()
+		List<TimedTranscript.Segment> segments = response.segments() == null ? java.util.List.of()
 				: response.segments().stream()
 					.map(s -> new TimedTranscript.Segment(s.start(), s.end(),
 							s.text() == null ? "" : s.text().trim(), s.avgLogProb(), s.noSpeechProb()))
 					.toList();
-		List<TimedTranscript.Word> words = response.words() == null ? java.of()
+		List<TimedTranscript.Word> words = response.words() == null ? List.of()
 				: response.words().stream()
 					.map(w -> new TimedTranscript.Word(w.word() == null ? "" : w.word().trim(), w.start(), w.end()))
 					.toList();
@@ -120,23 +120,23 @@ public class OpenAiWhisperService {
 		return new TimedTranscript(segments, words, billed);
 	}
 	
-	// Only the fields used here are declared; ignoreUnkowm keeps us safe from additions upstream.
-	@JsonIgnoreProperties(ignoreUnkown = true)
+	// Only the fields used here are declared; ignoreUnknown keeps us safe from additions upstream.
+	@JsonIgnoreProperties(ignoreUnknown = true)
 	private record VerboseResponse(Double duration, List<VerboseSegment> segments, List<VerboseWord> words,
 			Usage usage) {
 	}
 	
-	@JsonIgnoreProperties(ignoreUnkown = true)
+	@JsonIgnoreProperties(ignoreUnknown = true)
 	private record VerboseSegment(double start, double end, String text,
 			@JsonProperty("avg_logprob") double avgLogProb,
 			@JsonProperty("no_speech_prob") double noSpeechProb) {
 	}
 	
-	@JsonIgnoreProperties(ignoreUnkown = true)
+	@JsonIgnoreProperties(ignoreUnknown = true)
 	private record VerboseWord(String word, double start, double end) {
 	}
 	
-	@JsonIgnoreProperties(ignoreUnkown = true)
+	@JsonIgnoreProperties(ignoreUnknown = true)
 	private record Usage(Double seconds) {
 	}
 

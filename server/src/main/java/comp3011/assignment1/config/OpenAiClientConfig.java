@@ -22,7 +22,7 @@ import org.springframework.web.client.RestClient;
  * framework wiring.
  */
 @Configuration
-@EnableConfigurationProperties(OpenAiProperties.class)
+@EnableConfigurationProperties({OpenAiProperties.class, WhisperProperties.class})
 public class OpenAiClientConfig {
 
     @Bean

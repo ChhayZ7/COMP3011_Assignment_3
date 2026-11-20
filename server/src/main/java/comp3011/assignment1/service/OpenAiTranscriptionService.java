@@ -39,7 +39,7 @@ public class OpenAiTranscriptionService implements TranscriptionService {
     private final RestClient restClient;
     private final OpenAiProperties properties;
 
-    public OpenAiTranscriptionService(RestClient openAiRestClient, OpenAiProperties properties) {
+    public OpenAiTranscriptionService(@Qualifier("openAiRestClient") RestClient openAiRestClient, OpenAiProperties properties) {
         this.restClient = openAiRestClient;
         this.properties = properties;
     }
