@@ -332,9 +332,6 @@ New tests for this assignment:
 ---
 
 ## Known limitations
-
-- **Excerpts of a film don't hit the cache.** If an excerpt starts at a different point in the audio, its 30 s
-  clips are cut at different places, so their bytes, and their cache keys, differ from the full film's.
 - **Boundary sentences.** A sentence split exactly at a 30 s boundary can occasionally lose a word.
 - **Subtitles start after a short delay.** At the very start of a film that has never been transcribed, the first
   subtitles appear only once the first clip has been transcribed, a few seconds in.
