@@ -50,9 +50,9 @@ public class SubtitleCache {
 	private final Queue<String> insertionOrder = new ConcurrentLinkedQueue<>();
 	private final int maxEntries;
 	
-	public SubtitileCache(@Value("${subtitles.cache.max-entries:5000") int maxEntries) {
-		this.maxEntries = maxEntries;
-	}
+    public SubtitleCache(@Value("${subtitles.cache.max-entries:5000}") int maxEntries) {
+        this.maxEntries = maxEntries;
+    }
 	
     /**
      * Returns the cues for {@code key}, computing them with {@code compute} only if no other

@@ -40,9 +40,9 @@ public enum FrameProcessorOption {
 	MOTTLE_FRAMES('m', "mottle-frames", "Add cloudy emulsion mottling", FrameMottler::new),
 	BLEED_FRAMES('b', "bleed-frames", "Bleed light into frames", FrameBleeder::new),
 	PEPPER_FRAMES('p', "pepper-frames", "Pepper frames with dark spots/blotches",
-			FramePepperer::new);
+			FramePepperer::new),
 	SUBTITLE_FRAMES('S', "subtitle-frames", "Add speech-to-text subtitles to frames", 
-			FrameSubtitler::new)
+			FrameSubtitler::new);
 	
 	// Width the "--long-name" column is padded to so descriptions line up in the help text.
 	private static final int LONG_NAME_COLUMN_WIDTH = 17;

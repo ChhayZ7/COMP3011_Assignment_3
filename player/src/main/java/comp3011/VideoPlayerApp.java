@@ -84,7 +84,7 @@ public class VideoPlayerApp extends Application {
     			processors.add(new FrameSubtitler());
     		}
     		for (FrameProcessor processor : processors) {
-    			if (processor instancof FrameSubtitler subtitler) {
+    			if (processor instanceof FrameSubtitler subtitler) {
     				subtitler.useSubtitles(subtitles);
     			}
     		}

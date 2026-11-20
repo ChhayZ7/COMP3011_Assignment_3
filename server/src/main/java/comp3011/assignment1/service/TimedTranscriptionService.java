@@ -1,6 +1,6 @@
 package comp3011.assignment1.service;
 
-import comp3011.assigment1.model.TimedTranscript;
+import comp3011.assignment1.model.TimedTranscript;
 
 /**
  * Speech-to-text with timings, used for subtitles.
@@ -17,5 +17,5 @@ public interface TimedTranscriptionService {
      * @return segments and words with times relative to the start of the clip
      * @throws comp3011.assignment1.error.TranscriptionException if the provider fails
      */
-	TimeTranscript transcribe(byte[] audio, String filename, String contentType);
+	TimedTranscript transcribe(byte[] audio, String filename, String contentType);
 }

@@ -53,7 +53,7 @@ public class FrameSubtitler extends FrameProcessor {
 	}
 	
 	@Override
-	public void process(java.awt.Frame frame, InfoFrame info) throws Exception {
+	public void process(Frame frame, InfoFrame info) throws Exception {
 		if (subtitles == null || !subtitles.isEnabled()) {
 			return;
 		}

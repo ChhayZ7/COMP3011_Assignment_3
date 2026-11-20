@@ -8,7 +8,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
-import comp3001.assignment1.model.SubtitleResponse;
+import comp3011.assignment1.model.SubtitleResponse;
 import comp3011.assignment1.model.TimedTranscript;
 
 /**

@@ -137,7 +137,7 @@ final class SubtitleRenderer{
 	
 	private static double widestLine(List<String> lines, Font font, FontRenderContext context) {
 		double widest = 0;
-		for (String line :: lines) {
+		for (String line : lines) {
 			widest = Math.max(widest, new TextLayout(line, font, context).getAdvance());
 		}
 		return widest;

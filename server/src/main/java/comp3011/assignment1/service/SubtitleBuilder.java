@@ -1,6 +1,6 @@
 package comp3011.assignment1.service;
 
-import java.util.Array:ist;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
@@ -10,7 +10,7 @@ import org.springframework.stereotype.Component;
 import comp3011.assignment1.model.SubtitleCue;
 import comp3011.assignment1.model.TimedTranscript;
 import comp3011.assignment1.model.TimedTranscript.Segment;
-import compp3011.assignment1.model.TimedTranscript.Word;
+import comp3011.assignment1.model.TimedTranscript.Word;
 
 /**
  * Turns a timed transcript into subtitle cues that follow the assignment's guidelines.
@@ -143,7 +143,7 @@ public class SubtitleBuilder {
 	    	return from;
     }
     
-    private static void fillMissingTimes(double[] starts, double[] ends, double[] segmentStart, 
+    private static void fillMissingTimes(double[] starts, double[] ends, double segmentStart, 
     		double segmentEnd) {
     		int i = 0;
     		while (i < starts.length) {
@@ -233,13 +233,13 @@ public class SubtitleBuilder {
 	 * become one cue if the result still fits on two lines and lasts no more than 7
 	 * seconds.
 	 */
-    private static List<List<Token>> mergeShortGroups(LIst<List<Token>> groups){
+    private static List<List<Token>> mergeShortGroups(List<List<Token>> groups){
     		List<List<Token>> merged = new ArrayList<>();
-    		for (LIst<Token> group : groups) {
+    		for (List<Token> group : groups) {
     			if(!merged.isEmpty()) {
     				List<Token> previous = merged.get(merged.size() - 1);
     				List<Token> combined = new ArrayList<>(previous);
-    				combine.addAll(group);
+    				combined.addAll(group);
     				boolean tooClose = group.get(0).start() - previous.get(0).start() < MIN_DURATION;
     				if (tooClose && fitsTwoLines(join(combined)) && durationOf(combined) <= MAX_DURATION) {
     					merged.set(merged.size() - 1, combined);
@@ -327,7 +327,7 @@ public class SubtitleBuilder {
     
     private static String join(List<Token> tokens) {
     		StringBuilder text = new StringBuilder();
-    		if (Token token : tokens) {
+    		for (Token token : tokens) {
     			if (!text.isEmpty()) {
     				text.append(' ');
     			}

@@ -50,7 +50,7 @@ import java.util.function.LongSupplier;
  * subtitles meanwhile, and they come back by themselves once the problem goes away.
  * </p>
  */
-final class SubtitleFetcher{
+final class SubtitleFetcher {
 	static final long CLIP_US = 30_000_000L;
 	static final long OVERLAP_US = 2_000_000L;
 	static final int LOOKAHEAD_CLIPS = 3;
@@ -58,12 +58,12 @@ final class SubtitleFetcher{
 	private static final long PLANNER_IDLE_MS = 200;
 	private static final long FIRST_RETRY_DELAY_NS = 1_000_000_000L;
 	private static final long MAX_RETRY_DELAY_NS = 8_000_000_000L;
-	
+
 	private enum Status { IN_FLIGHT, DONE, FAILED }
-	
+
 	private record ClipState(Status status, int failures, long retryAtNs) {
 	}
-	
+
 	private final AudioClipExtractor extractor;
 	private final SubtitleClient client;
 	private final SubtitleTrack track;
@@ -75,13 +75,13 @@ final class SubtitleFetcher{
 	private final Thread planner;
 	private final SubtitleStatus status = new SubtitleStatus();
 	private volatile boolean running = true;
-	
+
 	// Planner thread only.
 	private AudioClipExtractor.MediaInfo media;
-	
+
 	SubtitleFetcher(File mediaFile, SubtitleClient client, SubtitleTrack track, LongSupplier playbackPositionUs,
-			BooleanSupplier enabled){
-		this.extractor = new AudioClipExtractor(medialFile);
+			BooleanSupplier enabled) {
+		this.extractor = new AudioClipExtractor(mediaFile);
 		this.client = client;
 		this.track = track;
 		this.playbackPositionUs = playbackPositionUs;
@@ -92,21 +92,21 @@ final class SubtitleFetcher{
 			thread.setDaemon(true);
 			return thread;
 		});
-		this.planner = new Thread(this::plan, "subtutle-planner");
+		this.planner = new Thread(this::plan, "subtitle-planner");
 		planner.setDaemon(true);
 		planner.setPriority(Thread.NORM_PRIORITY - 1); // Playback comes first.
 	}
-	
+
 	void start() {
 		planner.start();
 	}
-	
+
 	void stop() {
-		runnig = false;
+		running = false;
 		planner.interrupt();
 		uploads.shutdownNow(); // Interrupts any upload waiting on the server.
 	}
-	
+
 	// The planner thread's loop.
 	private void plan() {
 		try {
@@ -116,7 +116,7 @@ final class SubtitleFetcher{
 					continue;
 				}
 				int clip = nextClipToFetch();
-				if(clip < 0) {
+				if (clip < 0) {
 					Thread.sleep(PLANNER_IDLE_MS);
 					continue;
 				}
@@ -126,15 +126,15 @@ final class SubtitleFetcher{
 			// stop() was called.
 		}
 	}
-	
+
 	// Opens the film once to learn its length. If that fails (for example the USB stick is out), try again later.
-	private boolean ensureMediaInfo() throws InterruptedException{
+	private boolean ensureMediaInfo() throws InterruptedException {
 		if (media != null) {
 			return media.hasAudio();
 		}
 		try {
 			media = extractor.probe();
-			if (!media.hasAduio()) {
+			if (!media.hasAudio()) {
 				System.out.println("[subtitles] This media has no audio track, so there is nothing to subtitle.");
 			}
 			return media.hasAudio();
@@ -144,12 +144,12 @@ final class SubtitleFetcher{
 			return false;
 		}
 	}
-	
+
 	private int nextClipToFetch() {
 		long now = System.nanoTime();
 		int current = (int) (Math.max(0, playbackPositionUs.getAsLong()) / CLIP_US);
 		int last = media.durationUs() > 0 ? (int) ((media.durationUs() - 1) / CLIP_US) : Integer.MAX_VALUE;
-		for (int clip = current; clip <= Math.min(last, current + LOOKAHEAD_CLIP); clip++) {
+		for (int clip = current; clip <= Math.min(last, current + LOOKAHEAD_CLIPS); clip++) {
 			ClipState state = clips.get(clip);
 			if (state == null || (state.status() == Status.FAILED && state.retryAtNs() <= now)) {
 				return clip;
@@ -157,13 +157,13 @@ final class SubtitleFetcher{
 		}
 		return -1;
 	}
-	
+
 	private void prepareAndUpload(int clip) {
 		ClipState previous = clips.get(clip);
 		int failures = previous == null ? 0 : previous.failures();
 		long clipStartUs = clip * CLIP_US;
 		long clipEndUs = clipStartUs + CLIP_US;
-		
+
 		AudioClipExtractor.Clip audio;
 		try {
 			audio = extractor.extract(clipStartUs, clipEndUs + OVERLAP_US);
@@ -177,18 +177,18 @@ final class SubtitleFetcher{
 			clips.put(clip, new ClipState(Status.DONE, 0, 0)); // Silence: nothing to show, nothing to pay for.
 			return;
 		}
-		
+
 		clips.put(clip, new ClipState(Status.IN_FLIGHT, failures, 0));
 		uploadsInFlight.incrementAndGet();
 		try {
-			uploads.execute(() -> upload(clip, clupEndUs, audio, failure));
+			uploads.execute(() -> upload(clip, clipEndUs, audio, failures));
 		} catch (RejectedExecutionException e) {
 			uploadsInFlight.decrementAndGet(); // Stopping.
 		}
 	}
-	
+
 	// Runs on an upload thread.
-	private void upload(int clip, long clipEndUs, AdiioClipExtractor.Clip audio, int failures) {
+	private void upload(int clip, long clipEndUs, AudioClipExtractor.Clip audio, int failures) {
 		try {
 			SubtitleClient.ServerResponse response = client.fetch(audio.wav());
 			List<SubtitleCue> cues = new ArrayList<>();
@@ -215,22 +215,21 @@ final class SubtitleFetcher{
 			uploadsInFlight.decrementAndGet();
 		}
 	}
-	
+
 	private static ClipState failed(int previousFailures) {
 		int failures = previousFailures + 1;
 		long delay = Math.min(MAX_RETRY_DELAY_NS, FIRST_RETRY_DELAY_NS << Math.min(failures - 1, 10));
 		return new ClipState(Status.FAILED, failures, System.nanoTime() + delay);
 	}
-	
-	/*
-	 * Console reporting that only speaks when something changes, so a long outage
-	 * prints one line, not hundreds. Called from the planner and upload threads,
-	 * hence synchronized.
+
+	/**
+	 * Console reporting that only speaks when something changes, so a long outage prints one line, not hundreds.
+	 * Called from the planner and upload threads, hence synchronized.
 	 */
-	private static final class SubtitleStatus{
+	private static final class SubtitleStatus {
 		private boolean serverDown;
 		private boolean mediaDown;
-		
+
 		synchronized void serverAnswered(int clip, int cueCount, boolean cached) {
 			if (serverDown) {
 				System.out.println("[subtitles] The subtitle server is answering again.");
@@ -240,28 +239,28 @@ final class SubtitleFetcher{
 			System.out.printf("[subtitles] Clip %d (%ds-%ds): %d cues%s%n", clip, startSeconds,
 					startSeconds + CLIP_US / 1_000_000L, cueCount, cached ? " from the server cache" : "");
 		}
-		
+
 		synchronized void serverFailed(Exception e) {
 			if (!serverDown) {
 				System.out.println("[subtitles] Cannot get subtitles (" + describe(e) + "); will keep retrying.");
 				serverDown = true;
 			}
 		}
-		
+
 		synchronized void mediaFailed(Exception e) {
 			if (!mediaDown) {
 				System.out.println("[subtitles] Cannot read the media file (" + describe(e) + "); will keep retrying.");
 				mediaDown = true;
 			}
 		}
-		
+
 		synchronized void mediaReadable() {
 			if (mediaDown) {
 				System.out.println("[subtitles] The media file can be read again.");
 				mediaDown = false;
 			}
 		}
-		
+
 		private static String describe(Exception e) {
 			return e.getMessage() != null ? e.getMessage() : e.getClass().getSimpleName();
 		}

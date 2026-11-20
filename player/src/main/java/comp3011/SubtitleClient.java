@@ -31,29 +31,30 @@ import com.fasterxml.jackson.databind.ObjectMapper;
  * the fetcher's upload threads share one instance.
  * </p>
  */
-final class SubtitleClient implements Autocloseable {
+final class SubtitleClient implements AutoCloseable {
 	static final URI DEFAULT_SERVER = URI.create("http://localhost:8080");
 	private static final Duration CONNECT_TIMEOUT = Duration.ofSeconds(3);
 	private static final Duration REQUEST_TIMEOUT = Duration.ofSeconds(90);
-	
-	/* A cue as the server sends it: seconds from the start of the clip. */
-	@jsonIgnoreProperties(ignoreUnkown = true)
+
+	/** A cue as the server sends it: seconds from the start of the clip. */
+	@JsonIgnoreProperties(ignoreUnknown = true)
+	record ServerCue(double start, double end, List<String> lines) {
+	}
+
+	@JsonIgnoreProperties(ignoreUnknown = true)
 	record ServerResponse(List<ServerCue> cues, boolean cached) {
 	}
-	
+
 	private final URI endpoint;
 	private final HttpClient http;
-	private final tools.jackson.databind.ObjectMapper json = new ObjectWrapper();
-	
-	SubtitleClient(URI server){
+	private final ObjectMapper json = new ObjectMapper();
+
+	SubtitleClient(URI server) {
 		this.endpoint = server.resolve("/api/v1/subtitles");
 		this.http = HttpClient.newBuilder().connectTimeout(CONNECT_TIMEOUT).build();
 	}
-	
-	/*
-	 * Uploads one clip and returns the server's answer, or throws if the server
-	 * could not be reached or failed.
-	 */}
+
+	/** Uploads one clip and returns the server's answer, or throws if the server could not be reached or failed. */
 	ServerResponse fetch(byte[] wav) throws IOException, InterruptedException {
 		String boundary = "----subtitle-" + UUID.randomUUID();
 		HttpRequest request = HttpRequest.newBuilder(endpoint)
@@ -62,30 +63,27 @@ final class SubtitleClient implements Autocloseable {
 				.header("Accept", "application/json")
 				.POST(HttpRequest.BodyPublishers.ofByteArray(multipart(boundary, wav)))
 				.build();
-		
-		HttpResponse<byte[]> reponse = http.send(request, HttpResponse.BodyHandlers.ofByteArray());
+
+		HttpResponse<byte[]> response = http.send(request, HttpResponse.BodyHandlers.ofByteArray());
 		if (response.statusCode() != 200) {
 			throw new IOException("subtitle server answered HTTP " + response.statusCode());
 		}
 		ServerResponse body = json.readValue(response.body(), ServerResponse.class);
 		return body.cues() == null ? new ServerResponse(List.of(), body.cached()) : body;
 	}
-	
-	/*
-	 * One "file" part, the same form field the server's Assignment 1 /transcribe
-	 * endpoint uses.
-	 */
-	private static byte[] multipart(String boundry, byte[] wav) {
+
+	// One "file" part, the same form field the server's Assignment 1 /transcribe endpoint uses.
+	private static byte[] multipart(String boundary, byte[] wav) {
 		ByteArrayOutputStream body = new ByteArrayOutputStream(wav.length + 256);
 		String head = "--" + boundary + "\r\n"
-				+ "Content-Dispositon: form-data; name=\"file\"; filename=\"clip.wav\"\r\n"
+				+ "Content-Disposition: form-data; name=\"file\"; filename=\"clip.wav\"\r\n"
 				+ "Content-Type: audio/wav\r\n\r\n";
 		body.writeBytes(head.getBytes(StandardCharsets.US_ASCII));
 		body.writeBytes(wav);
 		body.writeBytes(("\r\n--" + boundary + "--\r\n").getBytes(StandardCharsets.US_ASCII));
 		return body.toByteArray();
 	}
-	
+
 	@Override
 	public void close() {
 		http.close();
