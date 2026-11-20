@@ -44,7 +44,7 @@ Toggling them never interrupts the video or audio.
 
 ```
 ├── Assignment_1-0.0.1-SNAPSHOT.jar   Web server, ready to run (java -jar)
-├── pom.xml, src/                     Video player (Maven / JavaFX project)
+├── pom.xml, player/                     Video player (Maven / JavaFX project)
 └── server/                           Web server source (Spring Boot project)
 ```
 
@@ -97,20 +97,30 @@ mvn javafx:run "-Djavafx.args=-a -S movie.mp4"
 ## Architecture
 
 ```
-                      VIDEO PLAYER                                                  WEB SERVER
-                                                                         POST /api/v1/subtitles
- movie.mp4 ─┬─▶ FrameDecoder ─▶ effects … ─▶ FrameSubtitler ─▶ ImageConverter ─▶ JavaFX    │
-            │        (Assignment 2 pipeline threads)  ▲ cue for this frame's time          ▼
-            │                                         │ (lock-free lookup)        SHA-256(audio)
-            │                                   SubtitleTrack                         │
-            │                                         ▲ cues                    hit ──┴── miss
-            │                                         │                          │        ▼
-            └─▶ subtitle-planner ─WAV clip─▶ subtitle-upload ×3 ── HTTP ─────▶   │     Whisper (whisper-1)
-                (own FFmpeg grabber)                                             │        ▼
-                                                                                 │   SubtitleBuilder
-                                                                                 ▼        ▼
-                                                                    cache ◀───── cues ◀───┘   UsageService
-                                                                         GET /api/v1/global/usage → {"usage": s}
+                      VIDEO PLAYER                                                                     
+                                                                                                  
+ movie.mp4 ─┬─▶ FrameDecoder ─▶ effects … ─▶ FrameSubtitler ─▶ ImageConverter ─▶ JavaFX                  
+            │   (Assignment 2 pipeline threads)       ▲ cue for this frame's time                           
+            │                                         │ (lock-free lookup)                            
+            │                                   SubtitleTrack                                              
+            │                                         ▲ cues                                          
+            │                                         │                                                
+            └─▶ subtitle-planner ─WAV clip─▶ subtitle-upload ×3 ── HTTP ──────────────────────────▶   WEB SERVER
+                (own FFmpeg grabber)                                 ▲───────────────────────── POST /api/v1/subtitles
+                                                                                                            |
+                                                                                                            ▼
+                                                                                                        SHA-256(audio)
+                                                                                                            |
+                                                                                                      hit ──┴── miss
+                                                                                                       │        ▼
+                                                                                                       |      Whisper
+                                                                                                       |     (whisper-1)
+                                                                                                       |         ▼
+                                                                                                       |  SubtitleBuilder
+                                                                                                       ▼        |
+                                                                                          cache ◀─────cues ◀────────┘   
+                                                        UsageService
+                                              GET /api/v1/global/usage → {"usage": s}
 ```
 
 The core idea is that each frame picks its subtitle by its own timestamp. The player fetches subtitles for ranges
