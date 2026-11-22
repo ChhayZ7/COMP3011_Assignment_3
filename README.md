@@ -44,10 +44,13 @@ Toggling them never interrupts the video or audio.
 ## Submission layout
 
 ```
-├── Assignment_1-0.0.1-SNAPSHOT.jar   Web server, ready to run (java -jar)
-├── pom.xml, src/                     Video player (Maven / JavaFX project)
-└── server/                           Web server source (Spring Boot project)
+Assignment3.zip
+├── README.md      This file
+├── player.zip     Video player: pom.xml + src/ (Maven / JavaFX project)
+└── server.zip     Web server:   pom.xml + src/ (Spring Boot project)
 ```
+
+Unzip `player.zip` and `server.zip` into two separate folders. Each is a complete Maven project.
 
 The web server is the Assignment 1 project extended with the subtitle and usage endpoints. The video player is the
 Assignment 2 project extended with the subtitle feature.
@@ -56,35 +59,35 @@ Assignment 2 project extended with the subtitle feature.
 
 ## Running it
 
-Requires **Java 25**. Start the web server first, then the player.
+Requires **Java 25** and **Maven**. Start the web server first, then the player, each in its own terminal.
 
 ### 1. Web server
 
-With an OpenAI API key, either in an environment variable or in a key file such as the course's `key.txt`:
-
-```bash
-java -jar Assignment_1-0.0.1-SNAPSHOT.jar
-```
+The server needs an OpenAI API key, either in an environment variable or in a key file such as the course's `key.txt`:
 
 | Variable | Purpose |
 |---|---|
 | `OPENAI_API_KEY` | The API key itself |
 | `OPENAI_API_KEY_FILE` | Path to a file holding the key; used when `OPENAI_API_KEY` is not set. The file is re-read on every call, so a replaced key works without a restart. |
 
-PowerShell example:
+From the folder where `server.zip` was unzipped (PowerShell shown):
 
 ```powershell
 $env:OPENAI_API_KEY_FILE = "E:\key.txt"
-java -jar Assignment_1-0.0.1-SNAPSHOT.jar
+mvn spring-boot:run
 ```
 
-**Offline mode (no key, no cost).** Starting with `--spring.profiles.active=stub` swaps in a stand-in transcriber
-that returns fixed sentences. It is used for development and the automated tests.
+The server listens on `http://localhost:8080`.
 
-To rebuild the jar from source: `cd server`, then `./mvnw clean package -DskipTests`. The jar is written to
-`server/target/`.
+**Offline mode (no key, no cost).** `mvn spring-boot:run "-Dspring-boot.run.profiles=stub"` swaps in a stand-in
+transcriber that returns fixed sentences. It is used for development and the automated tests.
+
+**As a standalone jar.** `mvn clean package -DskipTests` builds `target/Assignment_1-0.0.1-SNAPSHOT.jar`, which runs
+with `java -jar target/Assignment_1-0.0.1-SNAPSHOT.jar` (the same key variables apply).
 
 ### 2. Video player
+
+From the folder where `player.zip` was unzipped:
 
 ```bash
 mvn javafx:run "-Djavafx.args=-a -S movie.mp4"
@@ -323,8 +326,8 @@ The console reports each outage once and each recovery once, for example
 
 | Project | Command | Result |
 |---|---|---|
-| Web server | `cd server`, then `./mvnw test` | 34 tests, all passing |
-| Video player | `mvn test` | 30 tests, all passing |
+| Web server | `mvn test` (in the server folder) | 34 tests, all passing |
+| Video player | `mvn test` (in the player folder) | 30 tests, all passing |
 
 New tests for this assignment:
 
