@@ -122,7 +122,7 @@ final class PlaybackPipeline {
 			}
 			if (thread.isAlive()) {
 				allStopped = false;
-				System.out.println("WARNING: pipeline thread " + thread.getName() + " did not stop in time.");
+				ConsoleLog.println("WARNING: pipeline thread " + thread.getName() + " did not stop in time.");
 			}
 		}
 		

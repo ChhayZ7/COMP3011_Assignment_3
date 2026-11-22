@@ -68,11 +68,20 @@ public class FrameSubtitler extends FrameProcessor {
 		if (cue == null) {
 			return;
 		}
-		if (cue != drawnCue) {
-			drawnBitmap = SubtitleRenderer.render(cue.lines(), videoInfo.imageWidth(), videoInfo.imageHeight());
+		try {
+			if (cue != drawnCue) {
+				drawnBitmap = SubtitleRenderer.render(cue.lines(), videoInfo.imageWidth(), videoInfo.imageHeight());
+				drawnCue = cue;
+			}
+			if (drawnBitmap != null) {
+				drawnBitmap.blendOnto(pixels, videoInfo.imageWidth(), videoInfo.imageHeight(), videoInfo.imageStride(),
+						videoInfo.imageChannels());
+			}
+		} catch (RuntimeException e) {
+			// A subtitle that cannot be drawn is skipped rather than stopping playback.
+			ConsoleLog.println("[subtitles] Could not draw a subtitle: " + e);
 			drawnCue = cue;
+			drawnBitmap = null;
 		}
-		drawnBitmap.blendOnto(pixels, videoInfo.imageWidth(), videoInfo.imageHeight(), videoInfo.imageStride(),
-				videoInfo.imageChannels());
 	}
 }

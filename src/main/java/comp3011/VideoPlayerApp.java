@@ -13,6 +13,8 @@ package comp3011;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.bytedeco.ffmpeg.global.avutil;
+
 import javafx.application.Application;
 import javafx.geometry.Rectangle2D;
 import javafx.scene.Scene;
@@ -165,6 +167,9 @@ public class VideoPlayerApp extends Application {
     public static void main(String[] args) {
         // Subtitles are drawn with Java2D, which must not start AWT's own windowing system alongside JavaFX.
         System.setProperty("java.awt.headless", "true");
+        // FFmpeg normally writes about 1 KB of file information to stderr every time a file is opened, and the
+        // subtitle fetcher opens the file once per clip. Only real errors are logged, so stderr stays nearly empty.
+        avutil.av_log_set_level(avutil.AV_LOG_ERROR);
         commandLineController = new CommandLineController(args);
 
         if (!commandLineController.shouldLaunchApplication()) {

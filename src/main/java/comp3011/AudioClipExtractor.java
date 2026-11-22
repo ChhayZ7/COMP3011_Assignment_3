@@ -37,9 +37,7 @@ import org.bytedeco.javacv.FrameGrabber;
 final class AudioClipExtractor{
 	static final int SAMPLE_RATE = 16_000;
 	private static final int BYTES_PER_SAMPLE = 2;
-	// Clips whose loudest sample is below this are treated as silence and not sent: there is nothing to subtitle,
-	// it saves money, and Whisper tends to invent words for silence.
-	private static final int SILENCE_PEAK = 200;
+
 	
 	/**
 	 * A clip ready to upload.
@@ -87,7 +85,6 @@ final class AudioClipExtractor{
 			long clipStartUs = -1;
 			long samplesWanted = Long.MAX_VALUE;
 			long samplesWritten = 0;
-			int peak = 0;
 			
 			Frame frame;
 			while (samplesWritten < samplesWanted && (frame = grabber.grabSamples()) != null) {
@@ -109,14 +106,13 @@ final class AudioClipExtractor{
 				samples.rewind();
 				for(int i = skip; i < samples.limit() && samplesWritten < samplesWanted; i++) {
 					short sample = samples.get(i);
-					peak = Math.max(peak, Math.abs((int) sample));
 					pcm.write(sample & 0xff);
 					pcm.write((sample >> 8) & 0xff);
 					samplesWritten++;
 				}
 			}
 			
-			if (samplesWritten == 0 || peak < SILENCE_PEAK) {
+			if (samplesWritten == 0) {
 				return new Clip(null, Math.max(clipStartUs, startUs));
 			}
 			return new Clip(wav(pcm.toByteArray()), clipStartUs);

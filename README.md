@@ -20,6 +20,7 @@ which calls OpenAI's Whisper model, lays the text out as subtitles and caches th
 - [Resilience](#resilience)
 - [Security and privacy](#security-and-privacy)
 - [Testing](#testing)
+- [TITAN results](#titan-results)
 - [Design decisions and trade-offs](#design-decisions-and-trade-offs)
 - [Known limitations](#known-limitations)
 
@@ -44,7 +45,7 @@ Toggling them never interrupts the video or audio.
 
 ```
 ├── Assignment_1-0.0.1-SNAPSHOT.jar   Web server, ready to run (java -jar)
-├── pom.xml, player/                     Video player (Maven / JavaFX project)
+├── pom.xml, src/                     Video player (Maven / JavaFX project)
 └── server/                           Web server source (Spring Boot project)
 ```
 
@@ -177,6 +178,27 @@ timestamp always identifies the right subtitle.
   background box, so as little of the picture as possible is covered.
 - **Efficient.** Each subtitle is drawn only once. Every frame then copies just the pixels inside the text.
 
+### Console output that can never freeze playback
+
+| Class | Role |
+|---|---|
+| `ConsoleLog` | Every message the player prints while running goes onto a bounded queue; one background thread prints them. |
+
+- **The bug.** On TITAN the player froze about 116 s into the film, and the last clip was never sent. TITAN does not
+  read the player's console until the run ends, so once about 8 KB of output was waiting, the next `System.out` or
+  native stderr write **blocked**. The once-a-second "Frame headroom" line is printed from the JavaFX thread, so the
+  display froze. FFmpeg's per-file information dumps went to stderr from the thread cutting audio clips, so clip 4
+  was never cut. On a normal terminal the console is read continuously, so the bug never showed up locally.
+- **The fix.**
+  - Console output is blocking I/O, so it no longer happens on any thread that matters. `ConsoleLog.println` only
+    *offers* the message to a bounded queue, which never waits; a daemon thread does the printing.
+  - If the console stops being read, only that thread waits. The queue fills and further messages are dropped:
+    losing a log line is better than freezing the video.
+  - FFmpeg's own logging is lowered to errors only (`av_log_set_level(AV_LOG_ERROR)`), so the roughly 1 KB of file
+    information it writes every time the file is opened (once per clip) no longer goes to stderr at all.
+- **Verified** by running the player with its stdout and stderr connected to 4 KB pipes that nothing reads. Before
+  the fix it froze 70 s in and sent no clips; after it, it played to the last frame and sent every clip.
+
 ### Toggling
 
 - **Instant to switch.** The CC button and the `S` key flip an `AtomicBoolean` that `FrameSubtitler` reads.
@@ -263,6 +285,7 @@ values:
 | Per-clip fetch state | planner, uploads | planner | `ConcurrentHashMap` of immutable records | Each clip's state is replaced as a whole |
 | Uploads in flight | planner, uploads | planner | `AtomicInteger` | Counter updated from several threads |
 | Last drawn subtitle | subtitle stage only | the same thread | thread confinement | Not shared |
+| Console messages (`ConsoleLog`) | any thread | console-log thread | bounded `LinkedBlockingQueue`, `offer` (never waits) | No thread but the printer ever blocks on console I/O |
 | Server cache | request threads | request threads | `ConcurrentHashMap` + `CompletableFuture` | Atomic `putIfAbsent` gives one Whisper call per clip |
 | Billed seconds | request threads | usage endpoint | `LongAdder` of milliseconds | Integer addition is exact and the result does not depend on thread order |
 
@@ -278,7 +301,7 @@ costs almost nothing, and many players can be served at once.
 | Server down, or network lost | Playback continues. Subtitles already fetched keep showing. Failed clips are retried with a delay that doubles each time, up to 8 s, so subtitles return within seconds of the network coming back. |
 | Slow transcription | The player works up to 3 clips ahead. Frames never wait for subtitles; a frame with no subtitle loaded yet is simply shown without one. |
 | Media file lost (USB stick removed) | Subtitle fetching retries until the file can be read again; playback is handled by the Assignment 2 error handling. Subtitles already fetched stay available. |
-| Silent audio | Clips with no audio above a very low threshold are not uploaded. This saves money and avoids Whisper inventing words for silence. |
+| Console not being read | Output is printed by a background thread, so playback and subtitle fetching carry on even if nobody reads the console (see above). |
 | Bad or missing API key | The server returns an error without passing on the upstream response; the player retries. |
 
 The console reports each outage once and each recovery once, for example
@@ -301,7 +324,7 @@ The console reports each outage once and each recovery once, for example
 | Project | Command | Result |
 |---|---|---|
 | Web server | `cd server`, then `./mvnw test` | 34 tests, all passing |
-| Video player | `mvn test` | 31 tests, all passing |
+| Video player | `mvn test` | 30 tests, all passing |
 
 New tests for this assignment:
 
@@ -313,8 +336,26 @@ New tests for this assignment:
 | `SubtitleControllerTest` | Over HTTP: cues are returned, a repeat upload is a cache hit, and usage increases only on a miss. |
 | `SubtitleTrackTest` | Lookup by time, and resolving overlapping subtitles from neighbouring clips in either arrival order. |
 | `SubtitleRendererTest` | White text with a black outline, placed near the bottom, leaving the rest of the picture untouched, and fitting narrow frames. |
-| `SubtitleFetcherTest` | End to end against a fake server, with real audio cut by FFmpeg: subtitles land at the right film times; nothing is sent while subtitles are off; the player keeps retrying until the server answers; identical clips give identical bytes; silent clips are skipped. |
+| `SubtitleFetcherTest` | End to end against a fake server, with real audio cut by FFmpeg: subtitles land at the right film times; nothing is sent while subtitles are off; the player keeps retrying until the server answers; identical clips give identical bytes. |
 | `CommandLineControllerTest` | `-S` and `--subtitle-frames` parse correctly, `-s` still means scratches, and the help text is exact. |
+
+---
+
+## TITAN results
+
+**15 of 16** tests pass.
+
+| Tests | Result |
+|---|---|
+| T01–T03: server jar provided, launches, answers `/usage` | Pass |
+| T04: usage grows by at least the film's length after one play | Pass (146 s for the 137 s trailer, including clip overlaps) |
+| T05: `--help` mentions subtitles | Pass |
+| T06: plays to the final frame | Pass |
+| T07–T12: default off, `-S` on, the `S` key toggles both ways | Pass |
+| T13: second play is cached | Pass (usage unchanged) |
+| T14: renamed media is cached | Pass (same audio, same hash) |
+| T15: an excerpt of the media is cached | **Not passed:** see Known limitations |
+| T16: effects combined with subtitles | Pass |
 
 ---
 
@@ -328,10 +369,21 @@ New tests for this assignment:
 | 30 s clips with 2 s overlap | Shorter or longer clips | Shorter clips mean more requests and more sentences split at boundaries; longer clips mean a slower first subtitle. 30 s transcribes in a few seconds, well within the 3-clip look-ahead. |
 | Cache keyed by a hash of the audio | Keyed by file name or a client-supplied ID | Works across clients and renamed files, and cannot be poisoned |
 | No uploads while subtitles are off | Always fetch in the background | Privacy and cost; subtitles already fetched still reappear instantly |
+| All console output through a background logger | `System.out` wherever convenient | Console writes block when the console is not read; no thread that drives playback may ever wait for it |
+| Every clip with audio is sent, even quiet ones | Skip clips below a loudness threshold | An earlier version skipped quiet clips to save cost, but that left the end of the trailer untranscribed; completeness won |
 
 ---
 
 ## Known limitations
+
+- **Excerpts of a film don't hit the cache (TITAN T15).** An excerpt starts at a different point in the audio, so
+  its 30 s clips are cut in different places and are usually re-encoded too. Their bytes, and so their cache keys,
+  differ from the full film's. Fixing this would need **audio fingerprinting** instead of exact hashing:
+  - the player would send a compact fingerprint of the sound, such as loudness changes across a few frequency
+    bands every fraction of a second
+  - the server would slide it along the fingerprints of films it has already transcribed to find where the clip
+    fits
+  - on a strong match, it would return the cached subtitles shifted to the clip's timeline, without calling Whisper
 - **Boundary sentences.** A sentence split exactly at a 30 s boundary can occasionally lose a word.
 - **Subtitles start after a short delay.** At the very start of a film that has never been transcribed, the first
   subtitles appear only once the first clip has been transcribed, a few seconds in.

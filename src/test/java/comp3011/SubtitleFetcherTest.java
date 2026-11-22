@@ -142,12 +142,6 @@ class SubtitleFetcherTest {
 		assertTrue(Math.abs(first.startUs() - 30_000_000L) < 50_000, "clip starts at 30s, not " + first.startUs());
 	}
 
-	@Test
-	void silentClipsAreNotUploaded() throws Exception {
-		File film = silence(tempDir.resolve("quiet.wav"), 10);
-		assertTrue(new AudioClipExtractor(film).extract(0, 10_000_000L).isEmpty());
-	}
-
 	private interface Condition {
 		boolean met();
 	}

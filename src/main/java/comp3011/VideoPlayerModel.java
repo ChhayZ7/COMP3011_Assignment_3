@@ -388,11 +388,11 @@ public class VideoPlayerModel {
         if (intFrameRate > 0 && frame.frameNumber() % intFrameRate == 0) {
             long remainingUs = (targetTimeNs - frame.readyAtNs()) / 1_000L;
             if (remainingUs < 0) {
-                System.out.printf("Frame headroom is \u001B[31m%5dus\u001B[0m out of %dus spare.%n",
+                ConsoleLog.printf("Frame headroom is \u001B[31m%5dus\u001B[0m out of %dus spare.",
                         remainingUs,
                         videoFrameDurationUs);
             } else {
-                System.out.printf("Frame headroom is \u001B[32m%5dus\u001B[0m out of %dus spare.%n",
+                ConsoleLog.printf("Frame headroom is \u001B[32m%5dus\u001B[0m out of %dus spare.",
                         remainingUs,
                         videoFrameDurationUs);
             }
@@ -453,7 +453,7 @@ public class VideoPlayerModel {
     }
 
     private void handlePlaybackError(Exception e) {
-        e.printStackTrace();
+        ConsoleLog.println("Playback error: " + e);
         closePlaybackResources();
         pauseRequested = false;
         notifyStatusChanged("Error: " + e.getMessage());

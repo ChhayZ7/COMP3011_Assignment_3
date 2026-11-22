@@ -135,7 +135,7 @@ final class SubtitleFetcher {
 		try {
 			media = extractor.probe();
 			if (!media.hasAudio()) {
-				System.out.println("[subtitles] This media has no audio track, so there is nothing to subtitle.");
+				ConsoleLog.println("[subtitles] This media has no audio track, so there is nothing to subtitle.");
 			}
 			return media.hasAudio();
 		} catch (Exception e) {
@@ -174,8 +174,9 @@ final class SubtitleFetcher {
 			return;
 		}
 		if (audio.isEmpty()) {
-			clips.put(clip, new ClipState(Status.DONE, 0, 0)); // Silence: nothing to show, nothing to pay for.
-			return;
+		    ConsoleLog.printf("[subtitles] Clip %d: no audio, not sent", clip);
+		    clips.put(clip, new ClipState(Status.DONE, 0, 0));
+		    return;
 		}
 
 		clips.put(clip, new ClipState(Status.IN_FLIGHT, failures, 0));
@@ -232,31 +233,31 @@ final class SubtitleFetcher {
 
 		synchronized void serverAnswered(int clip, int cueCount, boolean cached) {
 			if (serverDown) {
-				System.out.println("[subtitles] The subtitle server is answering again.");
+				ConsoleLog.println("[subtitles] The subtitle server is answering again.");
 				serverDown = false;
 			}
 			long startSeconds = clip * CLIP_US / 1_000_000L;
-			System.out.printf("[subtitles] Clip %d (%ds-%ds): %d cues%s%n", clip, startSeconds,
+			ConsoleLog.printf("[subtitles] Clip %d (%ds-%ds): %d cues%s", clip, startSeconds,
 					startSeconds + CLIP_US / 1_000_000L, cueCount, cached ? " from the server cache" : "");
 		}
 
 		synchronized void serverFailed(Exception e) {
 			if (!serverDown) {
-				System.out.println("[subtitles] Cannot get subtitles (" + describe(e) + "); will keep retrying.");
+				ConsoleLog.println("[subtitles] Cannot get subtitles (" + describe(e) + "); will keep retrying.");
 				serverDown = true;
 			}
 		}
 
 		synchronized void mediaFailed(Exception e) {
 			if (!mediaDown) {
-				System.out.println("[subtitles] Cannot read the media file (" + describe(e) + "); will keep retrying.");
+				ConsoleLog.println("[subtitles] Cannot read the media file (" + describe(e) + "); will keep retrying.");
 				mediaDown = true;
 			}
 		}
 
 		synchronized void mediaReadable() {
 			if (mediaDown) {
-				System.out.println("[subtitles] The media file can be read again.");
+				ConsoleLog.println("[subtitles] The media file can be read again.");
 				mediaDown = false;
 			}
 		}
