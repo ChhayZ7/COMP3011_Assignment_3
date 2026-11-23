@@ -49,6 +49,7 @@ public class SubtitleService {
 	
 	private static String sha256(byte[] data) {
 		try {
+			 // compute 32-byte hash of the audio and turn it into a 64-character text string, which is used as the cache key
 			return HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(data));
 		} catch (NoSuchAlgorithmException e) {
 			throw new IllegalStateException("SHA-256 is always available", e);

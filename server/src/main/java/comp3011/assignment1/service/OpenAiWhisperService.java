@@ -80,6 +80,7 @@ public class OpenAiWhisperService implements TimedTranscriptionService {
 	}
 	}
 	
+	// Builds the multipart form that OpenAI expects.
 	private MultiValueMap<String, Object> buildRequestBody(byte[] audio, String filename, String contentType){
 		ByteArrayResource audioResource = new ByteArrayResource(audio) {
 			@Override
@@ -100,6 +101,7 @@ public class OpenAiWhisperService implements TimedTranscriptionService {
 		return body;
 	}
 	
+	// Converts OpenAI's shape into the server's own TimedTranscript
 	private static TimedTranscript toTranscript(VerboseResponse response) {
 		List<TimedTranscript.Segment> segments = response.segments() == null ? java.util.List.of()
 				: response.segments().stream()

@@ -182,6 +182,7 @@ public class SubtitleBuilder {
     		List<Token> current = new ArrayList<>();
     		
     		for (Token token : tokens) {
+    			// Cut when full
     			while(!current.isEmpty() &&(!fitsTwoLines(joinWith(current, token))
     					|| token.end() - current.get(0).start() > MAX_DURATION)) {
     				int cut = bestBreak(current);
@@ -189,6 +190,7 @@ public class SubtitleBuilder {
     				current = new ArrayList<>(current.subList(cut, current.size()));
     			}
     			
+    			// Cut early
     			if (!current.isEmpty() && durationOf(current) >= MIN_DURATION) {
     				Token previous = current.get(current.size() - 1);
     				boolean sentenceEnded = endsSentence(previous.text());

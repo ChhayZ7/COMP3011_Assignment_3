@@ -179,6 +179,7 @@ final class SubtitleFetcher {
 		    return;
 		}
 
+		// Planner thread helpers
 		clips.put(clip, new ClipState(Status.IN_FLIGHT, failures, 0));
 		uploadsInFlight.incrementAndGet();
 		try {
